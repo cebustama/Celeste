@@ -20,7 +20,8 @@ public class Movement : MonoBehaviour
     public float slideSpeed = 5;
     public float wallJumpLerp = 10;
     public float dashSpeed = 20;
-    public float enemyBounceForce = 10; 
+    public float enemyBounceForce = 10;
+    public float maxFallSpeed = 30f;
 
     [Space]
     [Header("Booleans")]
@@ -30,6 +31,7 @@ public class Movement : MonoBehaviour
     public bool wallSlide;
     public bool isDashing;
     public bool invertedGravity = false;
+    public bool isGrabbing;
 
     [Space]
 
@@ -44,6 +46,8 @@ public class Movement : MonoBehaviour
     public ParticleSystem jumpParticle;
     public ParticleSystem wallJumpParticle;
     public ParticleSystem slideParticle;
+
+    GameObject lastGrabbedObject;
 
     // Start is called before the first frame update
     void Start()
@@ -122,10 +126,15 @@ public class Movement : MonoBehaviour
         {
             anim.SetTrigger("jump");
 
-            if (coll.onGround)
+            if (coll.onGround || coll.onGrab)
             {
                 Jump(Vector2.up, false);
                 transform.SetParent(null);
+
+                if (coll.onGrab)
+                {
+                    lastGrabbedObject = coll.grabbedObject;
+                }
             }
 
             if (coll.onWall && !coll.onGround)
@@ -140,7 +149,7 @@ public class Movement : MonoBehaviour
 
         if (coll.onEnemy)
         {
-            rb.AddForce(Vector2.up * enemyBounceForce, ForceMode2D.Impulse);
+            Jump(Vector2.up, false);
 
             Invoke("DestroyEnemy", 0.2f);
         }
@@ -172,7 +181,21 @@ public class Movement : MonoBehaviour
             anim.Flip(side);
         }
 
+        if (coll.onGrab)
+        {
+            if (coll.grabbedObject != lastGrabbedObject)
+            {
+                rb.velocity = Vector2.zero;
+                rb.gravityScale = 0;
+            }
+        }
+        else
+        {
+            lastGrabbedObject = null;
+        }
 
+        // Limitar la velocidad maxima
+        rb.velocity = Vector3.ClampMagnitude(rb.velocity, maxFallSpeed);
     }
 
     void DestroyEnemy()

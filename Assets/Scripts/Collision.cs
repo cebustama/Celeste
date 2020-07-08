@@ -4,10 +4,10 @@ using UnityEngine;
 
 public class Collision : MonoBehaviour
 {
-
     [Header("Layers")]
     public LayerMask groundLayer;
     public LayerMask enemyLayer;
+    public LayerMask grabLayer;
 
     [Space]
 
@@ -19,6 +19,10 @@ public class Collision : MonoBehaviour
     public int wallSide;
 
     public bool onEnemy;
+
+    public bool onGrab;
+    public GameObject grabbedObject;
+
     public GameObject enemy;
 
     Movement movement;
@@ -73,6 +77,36 @@ public class Collision : MonoBehaviour
         onLeftWall = Physics2D.OverlapCircle(centerPoint + leftOffset, collisionRadius, groundLayer);
 
         wallSide = onRightWall ? -1 : 1;
+
+        // Revisar si cualquiera de los 4 circulos esta tocando la capa de "agarre"
+        onGrab = Physics2D.OverlapCircle(centerPoint + rightOffset, collisionRadius, grabLayer)
+            || Physics2D.OverlapCircle(centerPoint + leftOffset, collisionRadius, grabLayer)
+            || Physics2D.OverlapCircle(centerPoint + bottomOffset, collisionRadius, grabLayer)
+            || Physics2D.OverlapCircle(centerPoint + topOffset, collisionRadius, grabLayer);
+
+        if (onGrab)
+        {
+            if (Physics2D.OverlapCircle(centerPoint + topOffset, collisionRadius, grabLayer) != null)
+            {
+                grabbedObject = Physics2D.OverlapCircle(centerPoint + topOffset, collisionRadius, grabLayer).gameObject;
+            }
+            else if (Physics2D.OverlapCircle(centerPoint + bottomOffset, collisionRadius, grabLayer) != null)
+            {
+                grabbedObject = Physics2D.OverlapCircle(centerPoint + bottomOffset, collisionRadius, grabLayer).gameObject;
+            }
+            else if (Physics2D.OverlapCircle(centerPoint + leftOffset, collisionRadius, grabLayer) != null)
+            {
+                grabbedObject = Physics2D.OverlapCircle(centerPoint + leftOffset, collisionRadius, grabLayer).gameObject;
+            }
+            else if (Physics2D.OverlapCircle(centerPoint + rightOffset, collisionRadius, grabLayer) != null)
+            {
+                grabbedObject = Physics2D.OverlapCircle(centerPoint + rightOffset, collisionRadius, grabLayer).gameObject;
+            }
+        }
+        else
+        {
+            grabbedObject = null;
+        }
     }
 
     void OnDrawGizmos()
