@@ -11,6 +11,8 @@ public class Movement : MonoBehaviour
     public Rigidbody2D rb;
     private AnimationScript anim;
 
+    public float customGravity = 3;
+
     [Space]
     [Header("Stats")]
     public float speed = 10;
@@ -18,6 +20,7 @@ public class Movement : MonoBehaviour
     public float slideSpeed = 5;
     public float wallJumpLerp = 10;
     public float dashSpeed = 20;
+    public float enemyBounceForce = 10; 
 
     [Space]
     [Header("Booleans")]
@@ -26,6 +29,7 @@ public class Movement : MonoBehaviour
     public bool wallJumped;
     public bool wallSlide;
     public bool isDashing;
+    public bool invertedGravity = false;
 
     [Space]
 
@@ -61,6 +65,12 @@ public class Movement : MonoBehaviour
         Walk(dir);
         anim.SetHorizontalMovement(x, y, rb.velocity.y);
 
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            invertedGravity = !invertedGravity;
+            transform.localScale = new Vector3(transform.localScale.x, -transform.localScale.y, transform.localScale.z);
+        }
+
         if (coll.onWall && Input.GetButton("Fire3") && canMove)
         {
             if(side != coll.wallSide)
@@ -93,7 +103,7 @@ public class Movement : MonoBehaviour
         }
         else
         {
-            rb.gravityScale = 3;
+            rb.gravityScale = (invertedGravity) ? -customGravity : customGravity;
         }
 
         if(coll.onWall && !coll.onGround)
@@ -113,7 +123,11 @@ public class Movement : MonoBehaviour
             anim.SetTrigger("jump");
 
             if (coll.onGround)
+            {
                 Jump(Vector2.up, false);
+                transform.SetParent(null);
+            }
+
             if (coll.onWall && !coll.onGround)
                 WallJump();
         }
@@ -122,6 +136,13 @@ public class Movement : MonoBehaviour
         {
             if(xRaw != 0 || yRaw != 0)
                 Dash(xRaw, yRaw);
+        }
+
+        if (coll.onEnemy)
+        {
+            rb.AddForce(Vector2.up * enemyBounceForce, ForceMode2D.Impulse);
+
+            Invoke("DestroyEnemy", 0.2f);
         }
 
         if (coll.onGround && !groundTouch)
@@ -152,6 +173,11 @@ public class Movement : MonoBehaviour
         }
 
 
+    }
+
+    void DestroyEnemy()
+    {
+        Destroy(coll.enemy);
     }
 
     void GroundTouch()
@@ -196,7 +222,7 @@ public class Movement : MonoBehaviour
         yield return new WaitForSeconds(.3f);
 
         dashParticle.Stop();
-        rb.gravityScale = 3;
+        rb.gravityScale = (invertedGravity) ? -customGravity : customGravity;
         GetComponent<BetterJumping>().enabled = true;
         wallJumped = false;
         isDashing = false;
@@ -269,7 +295,9 @@ public class Movement : MonoBehaviour
         ParticleSystem particle = wall ? wallJumpParticle : jumpParticle;
 
         rb.velocity = new Vector2(rb.velocity.x, 0);
-        rb.velocity += dir * jumpForce;
+
+        int mult = (invertedGravity) ? -1 : 1;
+        rb.velocity += dir * jumpForce * mult;
 
         particle.Play();
     }
